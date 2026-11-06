@@ -574,8 +574,14 @@ export async function exportPdfReport({
     const year = reportYear(receivedAt, requestedYear);
     const rows = filterOpenRows(await listDetails(type), year, filters);
     const xlsx = await fill(type, rows, { year, receivedAt });
+    if (global.gc) {
+        global.gc();
+    }
     const filename = buildFileName(report.prefix, receivedAt);
     const pdf = await convertPdf(xlsx, filename);
+    if (global.gc) {
+        global.gc();
+    }
     let uploaded = false;
 
     if (uploadPdf) {
