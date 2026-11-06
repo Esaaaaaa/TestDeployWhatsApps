@@ -25,3 +25,4 @@ EXPOSE 10000
 
 # Start bot
 CMD ["node", "src/index.js"]
+
