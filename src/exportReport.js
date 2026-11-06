@@ -1,6 +1,6 @@
 import { PublicClientApplication } from "@azure/msal-node";
 import ExcelJS from "exceljs";
-import { spawn } from "node:child_process";
+import { execSync, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { copyFile, mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -18,7 +18,10 @@ const MONTHS_HEADER = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "
 const SCOPES = ["Files.ReadWrite.All", "offline_access"];
 const SOFFICE_CANDIDATES = [
     "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
-    "C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe"
+    "C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe",
+    "/usr/bin/libreoffice",
+    "/usr/bin/soffice",
+    "/usr/local/bin/soffice"
 ];
 const FONT_DIR = path.join(ROOT, "fonts");
 const REPORT_FONT = "Kalbe Rounded";
@@ -467,13 +470,20 @@ async function copyKalbeFonts(profile) {
     await Promise.all(files.map((file) => copyFile(path.join(FONT_DIR, file), path.join(dest, file))));
 }
 
-// Cari soffice di Windows
+// Cari soffice di Windows atau Linux
 export function resolveSofficePath(candidates = SOFFICE_CANDIDATES) {
     const found = candidates.find((candidate) => existsSync(candidate));
-    if (!found) {
-        throw new Error("LibreOffice belum terpasang");
+    if (found) {
+        return found;
     }
-    return found;
+    try {
+        const pathCheck = execSync("which libreoffice || which soffice", { stdio: "pipe" }).toString().trim();
+        if (pathCheck && existsSync(pathCheck)) {
+            return pathCheck;
+        }
+    } catch { }
+
+    throw new Error("LibreOffice belum terpasang");
 }
 
 // Jalankan LibreOffice headless
